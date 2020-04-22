@@ -118,8 +118,8 @@ class Node:
         thread_for_stabalize.start()
         thread_for_fix_finger = threading.Thread(target=  self.fix_fingers)
         thread_for_fix_finger.start()
-        thread_for_menu = threading.Thread(target=  self.menu)
-        thread_for_fix_finger.start()
+        # thread_for_menu = threading.Thread(target=  self.menu)
+        # thread_for_fix_finger.start()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.nodeinfo.ip, self.nodeinfo.port))
@@ -128,21 +128,21 @@ class Node:
                 conn, addr = s.accept()
                 t = threading.Thread(target=self.serve_requests, args=(conn,addr))
                 t.start()
-
-	def menu(self):
-		while(true):
-			print("************************MENU*************************")
-			print("PRESS ***********************************************")
-			print("1. TO SHOW FINGER TABLE *****************************")
-			print("2. TO STOP NODE *************************************")
-			print("*****************************************************")
-			choice = input()
-			if(choice == '1'):
-				self.finger_table.print()
-			elif(choice == '2'):
-				pass
-			else:
-				print("INCORRECT CHOICE")
+                
+  #   def menu(self):
+		# while(true):
+		# 	print("************************MENU*************************")
+		# 	print("PRESS ***********************************************")
+		# 	print("1. TO SHOW FINGER TABLE *****************************")
+		# 	print("2. TO STOP NODE *************************************")
+		# 	print("*****************************************************")
+		# 	choice = input()
+		# 	if(choice == '1'):
+		# 		self.finger_table.print()
+		# 	elif(choice == '2'):
+		# 		pass
+		# 	else:
+		# 		print("INCORRECT CHOICE")
 
     def join_request_from_other_node(self, node_id):
         """ will return successor for the node who is requesting to join """

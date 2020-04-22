@@ -59,6 +59,7 @@ class Node:
             args = message.split("|")[1:]
         result = "Done"
         if operation == 'insert':
+            print('function called \n\n\n\n\n\n\n\n\n')
             print('Inserting...')
             result = self.insert_key_val(message)
 
@@ -119,7 +120,7 @@ class Node:
         thread_for_fix_finger = threading.Thread(target=  self.fix_fingers)
         thread_for_fix_finger.start()
         thread_for_menu = threading.Thread(target=  self.menu)
-        thread_for_fix_finger.start()
+        thread_for_menu.start()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.nodeinfo.ip, self.nodeinfo.port))
@@ -129,20 +130,20 @@ class Node:
                 t = threading.Thread(target=self.serve_requests, args=(conn,addr))
                 t.start()
 
-	def menu(self):
-		while(true):
-			print("************************MENU*************************")
-			print("PRESS ***********************************************")
-			print("1. TO SHOW FINGER TABLE *****************************")
-			print("2. TO STOP NODE *************************************")
-			print("*****************************************************")
-			choice = input()
-			if(choice == '1'):
-				self.finger_table.print()
-			elif(choice == '2'):
-				pass
-			else:
-				print("INCORRECT CHOICE")
+    def menu(self):
+        while True:
+            print("************************MENU*************************")
+            print("PRESS ***********************************************")
+            print("1. TO SHOW FINGER TABLE *****************************")
+            print("2. TO STOP NODE *************************************")
+            print("*****************************************************")
+            choice = input()
+            if(choice == '1'):
+                self.finger_table.print()
+            elif(choice == '2'):
+                pass
+            else:
+                print("INCORRECT CHOICE")
 
     def join_request_from_other_node(self, node_id):
         """ will return successor for the node who is requesting to join """
@@ -172,24 +173,24 @@ class Node:
         return reply
 
     def search_key_val(self, message):
-    	key = message.split('|')[1].split(":")[0]
-    	id = self.hash(str(key))
-		succ = self.find_successor(id)
+        key = message.split('|')[1].split(":")[0]
+        id = self.hash(str(key))
+        succ = self.find_successor(id)
         if(succ == self.nodeinfo):
         	return self.data_store.search_key(key)
         else:
         	ip,port = self.get_ip_port(succ)
         	succ = self.request_handler.send_message(ip,port,message)
 
-	def delete_key_val(self, message):
-    	key = message.split('|')[1].split(":")[0]
-    	id = self.hash(str(key))
-		succ = self.find_successor(id)
+    def delete_key_val(self, message):
+        key = message.split('|')[1].split(":")[0]
+        id = self.hash(str(key))
+        succ = self.find_successor(id)
         if(succ == self.nodeinfo):
-        	return self.data_store.delete(key)
+            return self.data_store.delete(key)
         else:
-        	ip,port = self.get_ip_port(succ)
-        	succ = self.request_handler.send_message(ip,port,message)		
+            ip,port = self.get_ip_port(succ)
+            succ = self.request_handler.send_message(ip,port,message)		
 
     def check_predecessor(self):
         pass
