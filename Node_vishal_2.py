@@ -75,6 +75,9 @@ class Node:
             else:
                 return "NOT FOUND"
             
+        if operation == "send_keys":
+            id_of_joining_node = int(args[0])
+            result = self.send_keys(id_of_joining_node)
 
         if operation == "insert":
             print("finding hop to insert the key" , str(self.nodeinfo) )
@@ -191,7 +194,14 @@ class Node:
         self.successor = Node(ip,port)
         self.finger_table.table[0][1] = self.successor
         self.predecessor = None
-
+        
+        if self.successor.id != self.id:
+            data = self.request_handler.send_message(self.successor.ip , self.successor.port, "send_keys|"+str(self.id))
+            print("data recieved" , data)
+            for key_value in data.split(':'):
+                if len(key_value) > 1:
+                    print(key_value.split('|'))
+                    self.data_store.data[key_value.split('|')[0]] = key_value.split('|')[1]
 
     def find_predecessor(self, search_id):
         if search_id == self.id:
@@ -236,7 +246,20 @@ class Node:
 
         return closest_node
 
+    def send_keys(self, id_of_joining_node):
+        print(id_of_joining_node , "Asking for keys")
+        data = ""
+        keys_to_be_removed = []
+        for keys in self.data_store.data:
+            key_id = self.hash(str(keys))
+            if self.get_forward_distance_2nodes(key_id , id_of_joining_node) < self.get_forward_distance_2nodes(key_id,self.id):
+                data += str(keys) + "|" + str(self.data_store.data[keys]) + ":"
+                keys_to_be_removed.append(keys)
+        for keys in keys_to_be_removed:
+            self.data_store.data.pop(keys)
+        return data
 
+    
     def stabilize(self):
         while True:
             if self.successor is None:
