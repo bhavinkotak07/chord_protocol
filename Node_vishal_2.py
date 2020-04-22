@@ -6,6 +6,8 @@ import random
 import sys
 from copy import deepcopy
 m = 6
+
+# The class DataStore is used to store the key value pairs at each node
 class DataStore:
     def __init__(self):
         self.data = {}
@@ -22,13 +24,17 @@ class DataStore:
             print('Not found')
             print(self.data)
             return None
-        
+
+# The class NodeInfo is used to store information like the port number, ip adderss and the nodes id for each node        
 class NodeInfo:
     def __init__(self, ip, port):
         self.ip = ip
         self.port = port
     def __str__(self):
-        return self.ip + "|" + str(self.port)   
+        return self.ip + "|" + str(self.port)  
+
+# The class Node is used to manage the each node that, it contains all the information about the node like ip, port,
+# the node's successor, finger table, predecessor etc.
 class Node:
     def __init__(self, ip, port):
         self.ip = ip
@@ -42,17 +48,23 @@ class Node:
         self.data_store = DataStore()
         self.request_handler = RequestHandler()
     
+    # This function is used to find the id of any string and hence find it's correct position in the ring
     def hash(self, message):
         digest = hashlib.sha256(message.encode()).hexdigest()
         digest = int(digest, 16) % pow(2,m)
         return digest
 
+    # The process_requests fucntion is used to manage the differnt requests coming to any node it checks the mesaage
+    # and then calls the required function accordingly
     def process_requests(self, message):
         operation = message.split("|")[0]
         args = []
         if( len(message.split("|")) > 1):
             args = message.split("|")[1:]
         result = "Done"
+
+        # if the message is insert_server the node splits the message, finds the key and value from it and then adds it
+        # to the data store
         if operation == 'insert_server':
             print('Inserting in my datastore', str(self.nodeinfo))
             data = message.split('|')[1].split(":") 
@@ -61,12 +73,16 @@ class Node:
             self.data_store.insert(key, value)
             result = 'Inserted'
 
+        # if the message is delete_server, the node finds the key in the message, and then deletes the value 
+        # correspoding to that key in the data_store
         if operation == "delete_server":
             print('deleting in my datastore', str(self.nodeinfo))
             data = message.split('|')[1]
             self.data_store.data.pop(data)
             result = 'Deleted'
 
+        # if the message is search_server, the node finds the key in the message, and then searches for the value 
+        # correspoding to that key in the data_store
         if operation == "search_server":
             print('searching in my datastore', str(self.nodeinfo))
             data = message.split('|')[1]
@@ -75,10 +91,12 @@ class Node:
             else:
                 return "NOT FOUND"
             
+        # this is used to send the keys to a new node joining the ring
         if operation == "send_keys":
             id_of_joining_node = int(args[0])
             result = self.send_keys(id_of_joining_node)
 
+        # to check for an insert message from the client
         if operation == "insert":
             print("finding hop to insert the key" , str(self.nodeinfo) )
             data = message.split('|')[1].split(":") 
@@ -86,36 +104,40 @@ class Node:
             value = data[1]
             result = self.insert_key(key,value)
 
-
+        # to check for a delete message from the client
         if operation == "delete":
             print("finding hop to delete the key" , str(self.nodeinfo) )
             data = message.split('|')[1]
             result = self.delete_key(data)
 
-
+        # to check for a search message from the client
         if operation == 'search':
             print('Seaching...')
             data = message.split('|')[1]
             result = self.search_key(data)
         
     
-        
+        # to check for a join_request message from a new node
         if operation == "join_request":
             print("join request recv")
             result  = self.join_request_from_other_node(int(args[0]))
 
+        # to check for find_predecessor message
         if operation == "find_predecessor":
             print("finding predecessor")
             result = self.find_predecessor(int(args[0]))
 
+        # to check for a find_successor message
         if operation == "find_successor":
             print("finding successor")
             result = self.find_successor(int(args[0]))
 
+        # to check for a get_successor message
         if operation == "get_successor":
             print("getting successor")
             result = self.get_successor()
 
+        # to check for a get_predecessor message
         if operation == "get_predecessor":
             print("getting predecessor")
             result = self.get_predecessor()
@@ -130,6 +152,9 @@ class Node:
     
         # print(result)
         return str(result)
+
+    # The serve_requests fucntion is used to listen to incomint requests on the open port and then reply to them it 
+    # takes as arguments the connection and the address of the connected device. 
     def serve_requests(self, conn, addr):
         with conn:
             print('Connected by', addr)
@@ -143,6 +168,12 @@ class Node:
             print('Sending', data)
             data = bytes(str(data), 'utf-8')
             conn.sendall(data)
+
+    # The start function creates 3 threads for each node:
+    # On the 1st thread the stabilize function is being called repeatedly in a definite interval of time
+    # On the 2nd thread the fix_fingers function is being called repeatedly in a definite interval of time
+    # and on the 3rd thread the serve_requests function is running which is continously listening for any new
+    # incoming requests
     def start(self):
         thread_for_stabalize = threading.Thread(target = self.stabilize)
         thread_for_stabalize.start()
@@ -157,6 +188,9 @@ class Node:
                 t = threading.Thread(target=self.serve_requests, args=(conn,addr))
                 t.start()   
 
+    # The function to handle the incoming key_value pair insertion request from the client this function searches for the
+    # correct node on which the key_value pair needs to be stored and then sends a message to that node to store the 
+    # key_val pair in its data_store.
     def insert_key(self,key,value):
         id_of_key = self.hash(str(key))
         succ = self.find_successor(id_of_key)
@@ -165,6 +199,9 @@ class Node:
         self.request_handler.send_message(ip,port,"insert_server|" + str(key) + ":" + str(value) )
         return "Inserted at node id " + str(Node(ip,port).id) + " key was " + str(key) + " key hash was " + str(id_of_key)  
 
+    # The function to handle the incoming key_value pair deletion request from the client this function searches for the
+    # correct node on which the key_value pair is stored and then sends a message to that node to delete the key_val
+    # pair in its data_store.
     def delete_key(self,key):
         id_of_key = self.hash(str(key))
         succ = self.find_successor(id_of_key)
@@ -173,7 +210,9 @@ class Node:
         self.request_handler.send_message(ip,port,"delete_server|" + str(key) )
         return "deleted at node id " + str(Node(ip,port).id) + " key was " + str(key) + " key hash was " + str(id_of_key)
 
-
+    # The function to handle the incoming key_value pair search request from the client this function searches for the
+    # correct node on which the key_value pair is stored and then sends a message to that node to return the value 
+    # corresponding to that key.
     def search_key(self,key):
         id_of_key = self.hash(str(key))
         succ = self.find_successor(id_of_key)
@@ -182,11 +221,14 @@ class Node:
         data = self.request_handler.send_message(ip,port,"search_server|" + str(key) )
         return data
 
-
+    # Returns the successor for the node which is requesting to join.
     def join_request_from_other_node(self, node_id):
-        """ will return successor for the node who is requesting to join """
+
         return self.find_successor(node_id)
 
+    # Function responsible to join any new nodes to the chord ring it finds out the successor and the predecessor of the
+    # new incoming node in the ring and then it sends a send_keys request to its successor to recieve all the keys 
+    # smaller than its id from its successor.
     def join(self,node_ip, node_port):
         data = 'join_request|' + str(self.id)
         succ = self.request_handler.send_message(node_ip,node_port,data)
@@ -203,6 +245,7 @@ class Node:
                     print(key_value.split('|'))
                     self.data_store.data[key_value.split('|')[0]] = key_value.split('|')[1]
 
+    # The find_predecessor function provides the predecessor of any value in the ring given its id.
     def find_predecessor(self, search_id):
         if search_id == self.id:
             return str(self.nodeinfo)
@@ -222,6 +265,7 @@ class Node:
             data = self.request_handler.send_message(ip , port, "find_predecessor|"+str(search_id))
             return data
 
+    # The find_successor function provides the successor of any value in the ring given its id.
     def find_successor(self, search_id):
         if(search_id == self.id):
             return str(self.nodeinfo)
@@ -234,6 +278,7 @@ class Node:
         print(ip ,port , "in find successor, data of predecesor")
         data = self.request_handler.send_message(ip , port, "get_successor")
         return data
+
     def closest_preceding_node(self, search_id):
         closest_node = None
         min_distance = pow(2,m)+1
@@ -246,6 +291,8 @@ class Node:
 
         return closest_node
 
+    # The send_keys function is used to send all the keys less than equal to the id_of_joining_node to the new node that
+    # has joined the chord ring.
     def send_keys(self, id_of_joining_node):
         print(id_of_joining_node , "Asking for keys")
         data = ""
@@ -259,7 +306,9 @@ class Node:
             self.data_store.data.pop(keys)
         return data
 
-    
+    # The stabilize function is called in repetitively in regular intervals as it is responsible to make sure that each 
+    # node is pointing to its correct successor and predecessor nodes. By the help of the stabilize function each node
+    # is able to gather information of new nodes joining the ring.
     def stabilize(self):
         while True:
             if self.successor is None:
@@ -309,7 +358,10 @@ class Node:
                 print("changing my succ", node_id)
                 self.successor = Node(node_ip,int(node_port))
                 self.finger_table.table[0][1] = self.successor
-        
+    
+    # The fix_fingers function is used to correct the finger table at regular interval of time this function waits for
+    # 10 seconds and then picks one random index of the table and corrects it so that if any new node has joined the 
+    # ring it can properly mark that node in its finger table.
     def fix_fingers(self):
         while True:
 
@@ -323,21 +375,29 @@ class Node:
             ip,port = self.get_ip_port(data)
             self.finger_table.table[random_index][1] = Node(ip,port) 
             time.sleep(10)
+
+    # This function is used to return the successor of the node
     def get_successor(self):
         if self.successor is None:
             return "None"
         return self.successor.nodeinfo.__str__()
+
+    # This function is used to return the predecessor of the node
     def get_predecessor(self):
         if self.predecessor is None:
             return "None"
         return self.predecessor.nodeinfo.__str__()
+    
+    # This function is used to return the id of the node
     def get_id(self):
         return str(self.id)
+
+    # This function is used to return the ip and port number of a given node
     def get_ip_port(self, string_format):
         return string_format.strip().split('|')[0] , int(string_format.strip().split('|')[1])
     
     def get_backward_distance(self, node1):
-        
+
         disjance = 0
         if(self.id > node1):
             disjance =   self.id - node1
@@ -349,7 +409,7 @@ class Node:
         return disjance
 
     def get_backward_distance_2nodes(self, node2, node1):
-        
+
         disjance = 0
         if(node2 > node1):
             disjance =   node2 - node1
@@ -367,7 +427,9 @@ class Node:
     def get_forward_distance_2nodes(self,node2,node1):
         return pow(2,m) - self.get_backward_distance_2nodes(node2,node1)
         
+# The class FingerTable is responsible for managing the finger table of each node.
 class FingerTable:
+    # The __init__ fucntion is used to initialize the table with values when a new node joins the ring
     def __init__(self, my_id):
         self.table = []
         for i in range(m):
@@ -376,12 +438,17 @@ class FingerTable:
             node = None
             self.table.append( [entry, node] )
         
+    # The print function is used to print the finger table of a node.
     def print(self):
         for index, entry in enumerate(self.table):
             if entry[1] is None:
                 print('finger table entry', index, "None")
             else:
                 print('finger table entry', index, 'Val:',entry[0], entry[1].ip , entry[1].port)
+
+# The class RequestHandler is used to manage all the requests for sending messages from one node to another 
+# the send_message function takes as the ip, port of the reciever and the message to be sent as the arguments and 
+# then sends the message to the desired node.
 class RequestHandler:
     def __init__(self):
         pass
@@ -396,9 +463,10 @@ class RequestHandler:
         return data.decode("utf-8") 
         
 
-
+# The ip = "127.0.0.1" signifies that the node is executing on the localhost
 ip = "127.0.0.1"
 
+# This if statement is used to check if the node joining is the first node of the ring or not
 if len(sys.argv) == 3:
     print("joining ring")
     node = Node(ip, int(sys.argv[1]))
