@@ -26,28 +26,28 @@ def main():
 			sock.send(message.encode('utf-8'))
 			data = sock.recv(1024)
 			print(data)
-			
 
 		elif(choice == '2'):
 			key = input("ENTER THE KEY")
 			message = "search|" + str(key)
 			sock.send(message.encode('utf-8'))
 			data = sock.recv(1024)
-
 			print(data)
+
 		elif(choice == '3'):
 			key = input("ENTER THE KEY")
 			message = "delete|" + str(key)
 			sock.send(message.encode('utf-8'))
 			print(data)
+
 		elif(choice == '4'):
 			print("Closing the socket")
+			sock.close()
 			print("Exiting Client")
-			#system.exit(0)
+			exit()
+			
 		else:
 			print("INCORRECT CHOICE")
-		
-		sock.close()
 
 
 
