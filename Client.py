@@ -1,13 +1,11 @@
 import socket
-import system
 
 def main():
-	sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	ip = input("Give the ip address of a node")
+	#ip = input("Give the ip address of a node")
 	ip = "127.0.0.1"
+	#port = 9000
 	port = int(input("Give the port number of a node"))
-	sock.connect((ip,port))
-
+	
 	while(True):
 		print("************************MENU*************************")
 		print("PRESS ***********************************************")
@@ -17,6 +15,10 @@ def main():
 		print("4. TO EXIT ******************************************")
 		print("*****************************************************")
 		choice = input()
+		sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
+		sock.connect((ip,port))
+
 		if(choice == '1'):
 			key = input("ENTER THE KEY")
 			val = input("ENTER THE VALUE")
@@ -24,10 +26,14 @@ def main():
 			sock.send(message.encode('utf-8'))
 			data = sock.recv(1024)
 			print(data)
+			
+
 		elif(choice == '2'):
 			key = input("ENTER THE KEY")
 			message = "search|" + str(key)
 			sock.send(message.encode('utf-8'))
+			data = sock.recv(1024)
+
 			print(data)
 		elif(choice == '3'):
 			key = input("ENTER THE KEY")
@@ -36,11 +42,13 @@ def main():
 			print(data)
 		elif(choice == '4'):
 			print("Closing the socket")
-			sock.close()
 			print("Exiting Client")
-			system.exit(0)
+			#system.exit(0)
 		else:
 			print("INCORRECT CHOICE")
+		
+		sock.close()
+
 
 
 if __name__ == '__main__':
