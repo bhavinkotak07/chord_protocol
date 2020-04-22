@@ -5,17 +5,21 @@ import hashlib
 import random
 import sys
 from copy import deepcopy
+
 m = 6
+
 class DataStore:
     def __init__(self):
         self.data = {}
+
     def insert(self, key, value):
         self.data[key] = value
+
     def delete(self, key):
         del self.data[key]
+
     def search(self, search_key):
-        print('Search key', search_key)
-        
+        print('Search key', search_key)        
         if search_key in self.data:
             return self.data[search_key]
         else:
@@ -28,7 +32,8 @@ class NodeInfo:
         self.ip = ip
         self.port = port
     def __str__(self):
-        return self.ip + "|" + str(self.port)   
+        return self.ip + "|" + str(self.port)
+
 class Node:
     def __init__(self, ip, port):
         self.ip = ip
@@ -55,46 +60,45 @@ class Node:
         result = "Done"
         if operation == 'insert':
             print('Inserting...')
-            data = message.split('|')[1].split(":") 
-            key = data[0]
-            value = data[1]
-            self.data_store.insert(key, value)
-            result = 'Inserted'
-        if operation == 'search':
+            result = self.insert_key_val(message)
+
+        elif operation == 'search':
             print('Seaching...')
-            key = message.split('|')[1].split(":")[0]
-            result = self.search(key)
+            result = self.search_key_val(message)
+
+        elif operation == 'delete':
+            print('Deleting...')
+            result = self.delete_key_val(message)
         
-        if operation == "join_request":
+        elif operation == "join_request":
             print("join request recv")
             result  = self.join_request_from_other_node(int(args[0]))
 
-        if operation == "find_predecessor":
+        elif operation == "find_predecessor":
             print("finding predecessor")
             result = self.find_predecessor(int(args[0]))
 
-        if operation == "find_successor":
+        elif operation == "find_successor":
             print("finding successor")
             result = self.find_successor(int(args[0]))
 
-        if operation == "get_successor":
+        elif operation == "get_successor":
             print("getting successor")
             result = self.get_successor()
 
-        if operation == "get_predecessor":
+        elif operation == "get_predecessor":
             print("getting predecessor")
             result = self.get_predecessor()
 
-        if operation == "get_id":
+        elif operation == "get_id":
             print("getting id")
             result = self.get_id()
 
-        if operation == "notify":
+        elif operation == "notify":
             print("notifiying")
             self.notify(int(args[0]),args[1],args[2])
-    
-        # print(result)
         return str(result)
+
     def serve_requests(self, conn, addr):
         with conn:
             print('Connected by', addr)
@@ -108,10 +112,13 @@ class Node:
             print('Sending', data)
             data = bytes(str(data), 'utf-8')
             conn.sendall(data)
+
     def start(self):
         thread_for_stabalize = threading.Thread(target = self.stabilize)
         thread_for_stabalize.start()
         thread_for_fix_finger = threading.Thread(target=  self.fix_fingers)
+        thread_for_fix_finger.start()
+        thread_for_menu = threading.Thread(target=  self.menu)
         thread_for_fix_finger.start()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -120,18 +127,23 @@ class Node:
             while True:
                 conn, addr = s.accept()
                 t = threading.Thread(target=self.serve_requests, args=(conn,addr))
-                t.start()   
-    def search(self, key):
-        result = self.data_store.search(key)
-        print('Inside search', result)
-        if result == None or result == 'None':
-            print('Looking remotely')
-            data = 'search|' + key
-            data = self.request_handler.send_message('127.0.0.1', 5555, data)
-            data = data.decode('utf-8')
-            print(data)
-            return data
-        return result
+                t.start()
+
+	def menu(self):
+		while(true):
+			print("************************MENU*************************")
+			print("PRESS ***********************************************")
+			print("1. TO SHOW FINGER TABLE *****************************")
+			print("2. TO STOP NODE *************************************")
+			print("*****************************************************")
+			choice = input()
+			if(choice == '1'):
+				self.finger_table.print()
+			elif(choice == '2'):
+				pass
+			else:
+				print("INCORRECT CHOICE")
+
     def join_request_from_other_node(self, node_id):
         """ will return successor for the node who is requesting to join """
         return self.find_successor(node_id)
@@ -144,8 +156,44 @@ class Node:
         self.finger_table.table[0][1] = self.successor
         self.predecessor = None
 
+    def insert_key_val(self, message):
+        data = message.split('|')[1].split(":")
+        id = self.hash(str(data[0]))
+        succ = self.find_successor(id)
+        reply = ""
+        print('------->', self.nodeinfo, ' ...... ', self.reply)
+        if(succ == self.nodeinfo):
+        	self.data_store.insert(data[0], data[1])
+        	reply = succ
+        else:
+        	ip,port = self.get_ip_port(succ)
+        	reply = self.request_handler.send_message(ip,port,message)
+        print('------->', self.nodeinfo, ' ...... ', self.reply)
+        return reply
+
+    def search_key_val(self, message):
+    	key = message.split('|')[1].split(":")[0]
+    	id = self.hash(str(key))
+		succ = self.find_successor(id)
+        if(succ == self.nodeinfo):
+        	return self.data_store.search_key(key)
+        else:
+        	ip,port = self.get_ip_port(succ)
+        	succ = self.request_handler.send_message(ip,port,message)
+
+	def delete_key_val(self, message):
+    	key = message.split('|')[1].split(":")[0]
+    	id = self.hash(str(key))
+		succ = self.find_successor(id)
+        if(succ == self.nodeinfo):
+        	return self.data_store.delete(key)
+        else:
+        	ip,port = self.get_ip_port(succ)
+        	succ = self.request_handler.send_message(ip,port,message)		
+
     def check_predecessor(self):
         pass
+
     def find_predecessor(self, search_id):
         print("finding pred for id ", search_id)
         if self.predecessor is not None and  self.successor.id == self.predecessor.id:
@@ -173,6 +221,7 @@ class Node:
         print(ip ,port , "in find successor, data of predecesor")
         data = self.request_handler.send_message(ip , port, "get_successor")
         return data
+
     def closest_preceding_node(self, search_id):
         closest_node = None
         min_distance = pow(2,m)+1
@@ -182,9 +231,7 @@ class Node:
                 closest_node = self.finger_table.table[i][1]
                 min_distance = self.get_forward_distance_2nodes(self.finger_table.table[i][1].id,search_id)
                 print("Min distance",min_distance)
-
         return closest_node
-
 
     def stabilize(self):
         while True:
@@ -236,10 +283,9 @@ class Node:
         
     def fix_fingers(self):
         while True:
-
             random_index = random.randint(1,m-1)
             finger = self.finger_table.table[random_index][0]
-            print("in fix fingers , fixing index", random_index)
+            print("in fix fingers , fixing index", random_index, ' ----- ')
             data = self.find_successor(finger)
             if data == "None":
                 time.sleep(10)
@@ -247,16 +293,20 @@ class Node:
             ip,port = self.get_ip_port(data)
             self.finger_table.table[random_index][1] = Node(ip,port) 
             time.sleep(10)
+
     def get_successor(self):
         if self.successor is None:
             return "None"
         return self.successor.nodeinfo.__str__()
+
     def get_predecessor(self):
         if self.predecessor is None:
             return "None"
         return self.predecessor.nodeinfo.__str__()
+
     def get_id(self):
         return str(self.id)
+
     def get_ip_port(self, string_format):
         return string_format.strip().split('|')[0] , int(string_format.strip().split('|')[1])
     
@@ -305,19 +355,20 @@ class FingerTable:
             if entry[1] is None:
                 print('finger table entry', index, "None")
             else:
-                print('finger table entry', index, 'Val:',entry[0], entry[1].ip , entry[1].port)
+                print('finger table entry', index, 'Val:',entry[0], entry[1].ip , entry[1].port, entry[1].id)
+
 class RequestHandler:
     def __init__(self):
         pass
     def send_message(self, ip, port, message):
-        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
-  
-        # connect to server on local computer 
-        s.connect((ip,port)) 
-        s.send(message.encode('utf-8')) 
-        data = s.recv(1024) 
+        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
+        # connect to server on local computer
+        s.connect((ip,port))
+        s.send(message.encode('utf-8'))
+        data = s.recv(1024)
         s.close()
-        return data.decode("utf-8") 
+        return data.decode("utf-8")
         
 
 
