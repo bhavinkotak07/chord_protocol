@@ -23,12 +23,12 @@ def menu(self):
 		    print(data)
 		elif(choice == '2'):
 			key = input("ENTER THE KEY")
-			message = "search" + str(key) + "|" + str(val)
+			message = "search" + str(key)
 			sock.send(message.encode('utf-8'))
 			print(data)
 		elif(choice == '3'):
 			key = input("ENTER THE KEY")
-			message = "delete" + str(key) + "|" + str(val)
+			message = "delete" + str(key)
 			sock.send(message.encode('utf-8'))
 			print(data)
 		elif(choice == '4'):
