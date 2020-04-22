@@ -192,9 +192,10 @@ class Node:
         self.finger_table.table[0][1] = self.successor
         self.predecessor = None
 
-    def check_predecessor(self):
-        pass
+
     def find_predecessor(self, search_id):
+        if search_id == self.id:
+            return str(self.nodeinfo)
         print("finding pred for id ", search_id)
         if self.predecessor is not None and  self.successor.id == self.id:
             return self.nodeinfo.__str__()
@@ -212,6 +213,8 @@ class Node:
             return data
 
     def find_successor(self, search_id):
+        if(search_id == self.id):
+            return str(self.nodeinfo)
         print("finding succ for id ", search_id)
         predecessor = self.find_predecessor(search_id)
         print("predcessor found is ", predecessor)
