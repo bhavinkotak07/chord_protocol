@@ -38,6 +38,7 @@ def main():
 			key = input("ENTER THE KEY")
 			message = "delete|" + str(key)
 			sock.send(message.encode('utf-8'))
+			data = sock.recv(1024)
 			print(data)
 
 		elif(choice == '4'):
