@@ -85,3 +85,5 @@ here "port number of new node" is the port at which the node will listen for req
 *Usage:* `python3 Client.py`
 
 The client is menu driven where we need to provide inputs like the port number of the node which the client wants to connect to and then the option according to the task the client wants to perform like insert, search, delete etc.
+
+Link to video for Chord explanation and code run : https://youtu.be/2rNEjQCpFCo
