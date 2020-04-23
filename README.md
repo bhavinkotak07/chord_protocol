@@ -28,28 +28,15 @@ To avoid the linear search, Chord implements a faster search method by requiring
 
 #### Node join
 
-Whenever a new node joins, three invariants should be maintained (the first two ensure
-correctness and the last one keeps querying fast):
+Chord needs to deal with nodes joining the system concurrently and with nodes that fail or leave voluntarily.
+A basic ***stabilization*** protocol is used to keep nodes’ successor pointers up to date, which is sufficient to guarantee correctness of lookups. Those successor pointers are then used to verify and correct finger table entries, which allows these lookups to be fast as well as correct.
+If joining nodes have affected some region of the Chord ring, a lookup that occurs before stabilization has finished can exhibit one of three behaviors.
+1. The common case is that all the finger table entries involved in the lookup are reasonably current, and the lookup finds the correct successor in ***O(log N)*** steps.
+2. The second case is where successor pointers are correct, but fingers are inaccurate. This yields correct lookups, but they may be slower. 
+3. In the final case, the nodes in the affected region have incorrect successor pointers, or keys may not yet have migrated to newly joined nodes, and the lookup may fail.
 
-- Each node's successor points to its immediate successor correctly.
-- Each key is stored in successor(k)
-- Each node's finger table should be correct.
+Stabilization scheme guarantees to add nodes to a Chord ring in a way that preserves reachability of existing nodes, even in the face of concurrent joins and lost and reordered messages
 
-To satisfy these invariants, a predecessor field is maintained for each node. As the
-successor is the first entry of the finger table, we do not need to maintain this field separately
-any more. The following tasks should be done for a newly joined node n:
-
-1. Initialize node n (the predecessor and the finger table).
-2. Notify other nodes to update their predecessors and finger tables.
-3. The new node takes over its responsible keys from its successor.
-
-
-The predecessor of ***n*** can be easily obtained from the predecessor of ***successor(n)*** (in the
-previous circle). As for its finger table, there are various initialization methods. The simplest
-one is to execute find successor queries for all m entries, resulting in ***O(M log N)*** initialization
-time. A better method is to check whether i^th entry in the finger table is still correct for the
-(i+1)^th entry. This will lead to O(log^2 N). The best method is to initialize the finger table
-from its immediate neighbours and make some updates, which is ***O(log N) ***.
 
 #### Routing
 Routing protocol for operations like insert, delete and search.
