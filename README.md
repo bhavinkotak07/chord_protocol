@@ -72,11 +72,11 @@ _________________
 
 *Usage:* 
 
-For the first node joining the ring
+1. For the first node joining the ring
 `python3 Node_DHT.py port_number`
 here port_number is the port at which the node will listen for requests.
 
-For any forth coming nodes into the ring
+2. For any forth coming nodes into the ring
 `python3 Node_DHT.py <port number of new node> <port number of existing node>`
 here "port number of new node" is the port at which the node will listen for requests and  "port number of existing node" is the port number of any of the other pre existing nodes in the ring.
 
