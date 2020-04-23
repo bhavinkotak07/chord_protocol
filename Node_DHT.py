@@ -5,7 +5,9 @@ import hashlib
 import random
 import sys
 from copy import deepcopy
-m = 6
+
+m = 7
+
 class DataStore:
     def __init__(self):
         self.data = {}

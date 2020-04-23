@@ -20,11 +20,12 @@ def main():
 		sock.connect((ip,port))
 
 		if(choice == '1'):
-			key = input("ENTER THE KEY")
-			val = input("ENTER THE VALUE")
+			key = input("ENTER THE KEY : ")
+			val = input("ENTER THE VALUE : ")
 			message = "insert|" + str(key) + ":" + str(val)
 			sock.send(message.encode('utf-8'))
 			data = sock.recv(1024)
+			data = str(data.decode('utf-8'))
 			print(data)
 
 		elif(choice == '2'):
@@ -32,13 +33,15 @@ def main():
 			message = "search|" + str(key)
 			sock.send(message.encode('utf-8'))
 			data = sock.recv(1024)
-			print(data)
+			data = str(data.decode('utf-8'))
+			print("The value corresponding to the key is : ",data)
 
 		elif(choice == '3'):
 			key = input("ENTER THE KEY")
 			message = "delete|" + str(key)
 			sock.send(message.encode('utf-8'))
 			data = sock.recv(1024)
+			data = str(data.decode('utf-8'))
 			print(data)
 
 		elif(choice == '4'):
